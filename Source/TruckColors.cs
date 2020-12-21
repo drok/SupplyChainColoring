@@ -21,10 +21,8 @@ namespace SupplyChainColoring.PatchCarAI
     using ColossalFramework;
     using HarmonyLib;
     using JetBrains.Annotations;
-    using System;
 
-    // [HarmonyPatch(typeof(VehicleAI), "GetColor", new Type[] { typeof(ushort), typeof(Vehicle), typeof(InfoManager.InfoMode) })]
-    [HarmonyPatch(typeof(CarAI), "GetColor")]
+    [HarmonyPatch(typeof(CargoTruckAI), "GetColor")]
     public static class TruckColors
     {
         /*
@@ -38,6 +36,7 @@ namespace SupplyChainColoring.PatchCarAI
         [System.Diagnostics.CodeAnalysis.SuppressMessage("StyleCop.CSharp.NamingRules", "SA1313:Parameter names should begin with lower-case letter", Justification = "Output argument is __result as required by Harmony")]
         public static bool Prefix(ref VehicleAI __instance, ushort vehicleID, ref Vehicle data, InfoManager.InfoMode infoMode, ref UnityEngine.Color __result)
         {
+            InfoManager.SubInfoMode filterByResource = InfoManager.SubInfoMode.None;
 
             switch (infoMode)
             {
@@ -74,10 +73,13 @@ namespace SupplyChainColoring.PatchCarAI
                             subservice = ItemClass.SubService.IndustrialFarming;
                             break;
 
-                        case TransferManager.TransferReason.Goods:
                         case TransferManager.TransferReason.LuxuryProducts:
-                            subservice = ItemClass.SubService.IndustrialGeneric;
-                            break;
+                            __result = IndustryWorldInfoPanel.instance.GetResourceColor((TransferManager.TransferReason)data.m_transferType);
+                            return false;
+
+                        case TransferManager.TransferReason.Goods:
+                            __result = Singleton<TransferManager>.instance.m_properties.m_resourceColors[data.m_transferType];
+                            return false;
 
                         default:
                             subservice = ItemClass.SubService.None;
@@ -101,6 +103,138 @@ namespace SupplyChainColoring.PatchCarAI
                     }
 
                     break;
+                case InfoManager.InfoMode.Industry:
+                    ushort sourceBuilding = data.m_sourceBuilding;
+                    if (sourceBuilding != 0)
+                    {
+                        BuildingInfo info = Singleton<BuildingManager>.instance.m_buildings.m_buffer[sourceBuilding].Info;
+                        if ((object)info != null)
+                        {
+                            switch (info.m_class.m_subService)
+                            {
+                                case ItemClass.SubService.IndustrialOre:
+                                    subservice = ItemClass.SubService.PlayerIndustryOre;
+                                    break;
+                                case ItemClass.SubService.IndustrialForestry:
+                                    subservice = ItemClass.SubService.PlayerIndustryForestry;
+                                    break;
+                                case ItemClass.SubService.IndustrialOil:
+                                    subservice = ItemClass.SubService.PlayerIndustryOil;
+                                    break;
+                                case ItemClass.SubService.IndustrialFarming:
+                                    subservice = ItemClass.SubService.PlayerIndustryFarming;
+                                    break;
+                                case ItemClass.SubService.IndustrialGeneric: // Unspecialized industry (goods manufacturers)
+                                    __result = Singleton<TransferManager>.instance.m_properties.m_resourceColors[data.m_transferType];
+                                    return false;
+                                default:
+                                    switch (info.m_class.m_service)
+                                    {
+                                        case ItemClass.Service.PlayerIndustry:
+                                            switch (info.m_class.m_subService)
+                                            {
+                                                case ItemClass.SubService.None: // Warehouse, Unique Factories
+                                                    filterByResource = IndustryBuildingAI.ResourceToInfoMode((TransferManager.TransferReason)data.m_transferType);
+                                                    subservice = ItemClass.SubService.None;
+
+                                                    if (filterByResource == InfoManager.SubInfoMode.None)
+                                                    {
+                                                        if ((TransferManager.TransferReason)data.m_transferType == TransferManager.TransferReason.Goods)
+                                                        {
+                                                            __result = Singleton<TransferManager>.instance.m_properties.m_resourceColors[data.m_transferType];
+                                                            return false;
+                                                        }
+                                                        else
+                                                        {
+                                                            filterByResource = Singleton<InfoManager>.instance.CurrentSubMode;
+                                                        }
+                                                    }
+
+                                                    break;
+                                                default:
+                                                    subservice = info.m_class.m_subService;
+                                                    break;
+                                            }
+
+                                            break;
+                                        default:
+                                            ushort targetBuilding = data.m_targetBuilding;
+                                            if (targetBuilding != 0)
+                                            {
+                                                BuildingInfo tinfo = Singleton<BuildingManager>.instance.m_buildings.m_buffer[targetBuilding].Info;
+                                                if ((object)tinfo != null)
+                                                {
+                                                    switch (tinfo.m_class.m_subService)
+                                                    {
+                                                        case ItemClass.SubService.IndustrialOre:
+                                                            subservice = ItemClass.SubService.PlayerIndustryOre;
+                                                            break;
+                                                        case ItemClass.SubService.IndustrialForestry:
+                                                            subservice = ItemClass.SubService.PlayerIndustryForestry;
+                                                            break;
+                                                        case ItemClass.SubService.IndustrialOil:
+                                                            subservice = ItemClass.SubService.PlayerIndustryOil;
+                                                            break;
+                                                        case ItemClass.SubService.IndustrialFarming:
+                                                            subservice = ItemClass.SubService.PlayerIndustryFarming;
+                                                            break;
+                                                        default:
+                                                            filterByResource = IndustryBuildingAI.ResourceToInfoMode((TransferManager.TransferReason)data.m_transferType);
+
+                                                            if (filterByResource == InfoManager.SubInfoMode.None)
+                                                            {
+                                                                switch (tinfo.m_class.m_service)
+                                                                {
+                                                                    case ItemClass.Service.Road: // Ie, exporting, from import
+                                                                        filterByResource = InfoManager.SubInfoMode.None;
+                                                                        break;
+                                                                    case ItemClass.Service.PlayerIndustry:
+                                                                    case ItemClass.Service.Industrial: // Unspecialized industry
+                                                                        break;
+                                                                    default:
+                                                                        return true;
+                                                                }
+                                                            }
+                                                            subservice = ItemClass.SubService.None;
+                                                            break;
+                                                    } // Filter by industry type
+                                                }
+                                                else
+                                                {
+                                                    return true;
+                                                }
+                                            }
+                                            else
+                                            {
+                                                filterByResource = IndustryBuildingAI.ResourceToInfoMode((TransferManager.TransferReason)data.m_transferType);
+                                                subservice = ItemClass.SubService.None;
+                                                break;
+                                            } // Filter by Material
+
+                                            break;
+                                    }
+
+                                    break;
+                            } // Filter by industry type
+
+                            if (filterByResource == Singleton<InfoManager>.instance.CurrentSubMode || IndustryBuildingAI.ServiceToInfoMode(subservice) == Singleton<InfoManager>.instance.CurrentSubMode)
+                            {
+                                __result = IndustryWorldInfoPanel.instance.GetResourceColor((TransferManager.TransferReason)data.m_transferType);
+                                return false;
+                            }
+                        }
+                        else
+                        {
+                            return true;
+                        }
+                    }
+                    else
+                    {
+                        return true;
+                    }
+
+                    __result = Singleton<InfoManager>.instance.m_properties.m_neutralColor;
+                    return false;
                 default:
                     return true;
             }

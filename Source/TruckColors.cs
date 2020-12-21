@@ -78,6 +78,7 @@ namespace SupplyChainColoring.PatchCarAI
                             return false;
 
                         case TransferManager.TransferReason.Goods:
+                        case TransferManager.TransferReason.Fish:
                             __result = Singleton<TransferManager>.instance.m_properties.m_resourceColors[data.m_transferType];
                             return false;
 
@@ -157,6 +158,8 @@ namespace SupplyChainColoring.PatchCarAI
                                             }
 
                                             break;
+                                        // Should I color Goods from fish factories on the Industry Areas view?
+                                        // No, they are not participants in the Industries supply chains
                                         default:
                                             ushort targetBuilding = data.m_targetBuilding;
                                             if (targetBuilding != 0)
@@ -235,6 +238,40 @@ namespace SupplyChainColoring.PatchCarAI
 
                     __result = Singleton<InfoManager>.instance.m_properties.m_neutralColor;
                     return false;
+                case InfoManager.InfoMode.Fishing:
+                    BuildingInfo ownerInfo = Singleton<BuildingManager>.instance.m_buildings.m_buffer[data.m_sourceBuilding].Info;
+                    System.Type ownerType = ownerInfo.m_buildingAI.GetType();
+                    if (ownerType == typeof(FishingHarborAI))
+                    {
+                        var ai = ownerInfo.m_buildingAI as FishingHarborAI;
+                        switch (ai.m_boatClass.m_level)
+                        {
+                            case ItemClass.Level.Level1: // generic
+                                __result = Singleton<TransferManager>.instance.m_properties.m_resourceColors[data.m_transferType];
+                                break;
+                            case ItemClass.Level.Level2: // salmon
+                                __result = Singleton<NaturalResourceManager>.instance.m_properties.m_fishColorShallowFlowing;
+                                break;
+                            case ItemClass.Level.Level3: // shellfish
+                                __result = Singleton<NaturalResourceManager>.instance.m_properties.m_fishColorDeepStill;
+                                break;
+                            case ItemClass.Level.Level4: // Tuna
+                                __result = Singleton<NaturalResourceManager>.instance.m_properties.m_fishColorDeepFlowing;
+                                break;
+                            case ItemClass.Level.Level5: // Anchovies
+                                __result = Singleton<NaturalResourceManager>.instance.m_properties.m_fishColorShallowStill;
+                                break;
+                        }
+
+                        return false;
+                    } else if (ownerType == typeof(FishFarmAI))
+                    {
+                        __result = Singleton<TransferManager>.instance.m_properties.m_resourceColors[data.m_transferType];
+                        return false;
+                    }
+
+                    return true;
+
                 default:
                     return true;
             }

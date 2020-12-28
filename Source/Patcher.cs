@@ -20,6 +20,8 @@ namespace SupplyChainColoring
 {
     using HarmonyLib;
     using System.Reflection;
+    using UnityEngine;
+    using System;
 
     public class Patcher
     {
@@ -29,16 +31,34 @@ namespace SupplyChainColoring
         public static void PatchAll()
         {
             if (patched) return;
-            patched = true;
 
-            var harmony = new Harmony(HarmonyId);
-            harmony.PatchAll(Assembly.GetExecutingAssembly());
+            try
+            {
+#if DEBUG
+                Harmony.DEBUG = true;
+                Debug.Log($"SCC: Patching {Assembly.GetExecutingAssembly().GetName().Version}");
+#endif
+                var harmony = new Harmony(HarmonyId);
+                harmony.PatchAll();
+            }
+            catch (Exception e)
+            {
+                Debug.LogException(e);
+            }
+            finally
+            {
+                patched = true;
+            }
         }
 
         public static void UnpatchAll()
         {
             if (!patched) return;
 
+#if DEBUG
+            Harmony.DEBUG = true;
+            Debug.Log($"SCC: Unpatching {Assembly.GetExecutingAssembly().GetName().Version}");
+#endif
             var harmony = new Harmony(HarmonyId);
             harmony.UnpatchAll(HarmonyId);
 

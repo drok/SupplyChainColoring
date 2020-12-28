@@ -69,6 +69,7 @@
     <Compile Include="SharedAssemblyInfo.cs">
       <Link>Properties\SharedAssemblyInfo.cs</Link>
     </Compile>
+    <Compile Include="Source\Mappings.cs" />
     <Compile Include="Source\ProcessorColors.cs" />
     <Compile Include="Source\WarehouseColors.cs" />
     <Compile Include="Source\TruckColors.cs" />

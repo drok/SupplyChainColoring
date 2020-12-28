@@ -35,8 +35,7 @@ namespace SupplyChainColoring
 #endif
         public static Version ModVersion => typeof(SupplyChainColoringMod).Assembly.GetName().Version;
 
-        public static Version ModVersion => typeof(SupplyChainColoringMod).Assembly.GetName().Version;
-
+        public static bool HaveIndustriesDLC { get; private set; }
 #if DEBUG
         public string Name => "Supply Chain Coloring " + ModVersion.ToString(4) + " DEBUG";
 #else
@@ -48,6 +47,7 @@ namespace SupplyChainColoring
         [UsedImplicitly]
         public void OnEnabled()
         {
+            HaveIndustriesDLC = SteamHelper.IsDLCOwned(SteamHelper.DLC.IndustryDLC);
             HarmonyHelper.DoOnHarmonyReady(() => Patcher.PatchAll());
         }
 

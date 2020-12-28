@@ -21,10 +21,27 @@ namespace SupplyChainColoring
     using CitiesHarmony.API;
     using ICities;
     using JetBrains.Annotations;
+    using UnityEngine;
+    using System.Reflection;
+    using System;
 
     public class SupplyChainColoringMod : IUserMod
     {
-        public string Name => "Supply Chain Coloring";
+#if DEBUG
+        public SupplyChainColoringMod()
+        {
+            Debug.Log($"SCC: ..ctor Mod {Assembly.GetExecutingAssembly().GetName().Version}");
+        }
+#endif
+        public static Version ModVersion => typeof(SupplyChainColoringMod).Assembly.GetName().Version;
+
+        public static Version ModVersion => typeof(SupplyChainColoringMod).Assembly.GetName().Version;
+
+#if DEBUG
+        public string Name => "Supply Chain Coloring " + ModVersion.ToString(4) + " DEBUG";
+#else
+        public string Name => "Supply Chain Coloring " + ModVersion.ToString(3);
+#endif
 
         public string Description => "Highlight warehouses and cargo trucks on 'Industry Areas' and 'Natural Resources' views";
 

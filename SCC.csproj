@@ -73,6 +73,7 @@
     <Compile Include="Source\FishingBoatColors.cs" />
     <Compile Include="Source\ProcessorColors.cs" />
     <Compile Include="Source\WarehouseColors.cs" />
+    <Compile Include="Source\ProcessorTooltip.cs" />
     <Compile Include="Source\TruckColors.cs" />
     <Compile Include="Source\SupplyChainColoringMod.cs" />
     <Compile Include="Source\Patcher.cs" />

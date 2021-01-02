@@ -24,6 +24,7 @@ namespace SupplyChainColoring
     using UnityEngine;
     using System.Reflection;
     using System;
+    using ColossalFramework;
 
     public class SupplyChainColoringMod : IUserMod
     {
@@ -49,6 +50,19 @@ namespace SupplyChainColoring
         {
             HaveIndustriesDLC = SteamHelper.IsDLCOwned(SteamHelper.DLC.IndustryDLC);
             HarmonyHelper.DoOnHarmonyReady(() => Patcher.PatchAll());
+
+            if (Singleton<InfoManager>.instance.CurrentMode == InfoManager.InfoMode.Industry ||
+                Singleton<InfoManager>.instance.CurrentMode == InfoManager.InfoMode.NaturalResources ||
+                Singleton<InfoManager>.instance.CurrentMode == InfoManager.InfoMode.Fishing)
+            {
+                Singleton<BuildingManager>.instance.UpdateBuildingColors();
+
+                /* Vehicles also need to be done, but CS updates vehicle colors on every frame
+                 * even when simulation is paused. Subsequently, there is no way to flag that
+                 * vehicle colors should be updated. If CO fixes this performance drag in the future,
+                 * this mod should be updated to trigger vehicle color updates
+                 */
+            }
         }
 
         [UsedImplicitly]
@@ -57,6 +71,19 @@ namespace SupplyChainColoring
             if (HarmonyHelper.IsHarmonyInstalled)
             {
                 Patcher.UnpatchAll();
+            }
+
+            if (Singleton<InfoManager>.instance.CurrentMode == InfoManager.InfoMode.Industry ||
+                Singleton<InfoManager>.instance.CurrentMode == InfoManager.InfoMode.NaturalResources ||
+                Singleton<InfoManager>.instance.CurrentMode == InfoManager.InfoMode.Fishing)
+            {
+                Singleton<BuildingManager>.instance.UpdateBuildingColors();
+
+                /* Vehicles also need to be done, but CS updates vehicle colors on every frame
+                 * even when simulation is paused. Subsequently, there is no way to flag that
+                 * vehicle colors should be updated. If CO fixes this performance drag in the future,
+                 * this mod should be updated to trigger vehicle color updates
+                 */
             }
         }
     }
